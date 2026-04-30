@@ -203,9 +203,9 @@ export function getPleasureStage(pleasure: number): PleasureStage {
 // 生成 SSML
 export function generateSSML(text: string, pleasureStage: PleasureStage): string {
   const rateMap = {
-    slow: '-20%',
-    medium: '0%',
-    fast: '+20%',
+    slow: '-20%',   // 0.6倍速
+    medium: '-10%', // 0.8倍速
+    fast: '0%',     // 1倍速
   };
   
   const volumeMap = {
@@ -255,6 +255,7 @@ export interface Message {
   currentPleasure?: number; // 当前愉悦值（变化后的值，仅assistant消息需要）
   timestamp: number;
   audioUrl?: string;
+  ssml?: string; // SSML语音标记
 }
 
 // 排行榜记录

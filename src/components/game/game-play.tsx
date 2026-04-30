@@ -53,7 +53,7 @@ export function GamePlay() {
   };
 
   // 播放 TTS
-  const playTTS = useCallback(async (text: string) => {
+  const playTTS = useCallback(async (text: string, ssml?: string) => {
     const textForTTS = filterBracketContent(text);
     if (!textForTTS) return;
     
@@ -63,6 +63,7 @@ export function GamePlay() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: textForTTS,
+          ssml: ssml ? ssml : undefined, // 传递 SSML
           gender: settings?.gender,
           personalityId: settings?.personality,
           currentPleasure: state.pleasure,
@@ -135,6 +136,7 @@ export function GamePlay() {
           pleasureChange: 0,
           currentPleasure: state.pleasure,
           timestamp: Date.now(),
+          ssml: data.ssml,
         };
         addMessage(assistantMessage);
 
@@ -143,7 +145,7 @@ export function GamePlay() {
 
         // 播放语音
         if (data.reply) {
-          playTTS(data.reply);
+          playTTS(data.reply, data.ssml);
         }
       } catch (error) {
         console.error('获取初始消息失败:', error);
@@ -215,6 +217,7 @@ export function GamePlay() {
         pleasureChange: data.pleasureChange,
         currentPleasure: data.newPleasure,
         timestamp: Date.now(),
+        ssml: data.ssml,
       };
       addMessage(assistantMessage);
 
@@ -222,7 +225,7 @@ export function GamePlay() {
       setOptions(data.options || []);
 
       // 播放语音
-      playTTS(data.reply);
+      playTTS(data.reply, data.ssml);
     } catch (error) {
       console.error('发送消息失败:', error);
     } finally {
