@@ -231,11 +231,12 @@ export function GameResult() {
     generateResultCard();
   }, [scenario, personality, state, duration, earnedAchievements, isWon, isLost, isAuthenticated, user]);
 
-  // 分享结果
-  const handleShare = async () => {
+  // 分享链接
+  const handleShareLink = async () => {
     setShareLoading(true);
 
-    const gameUrl = process.env.COZE_PROJECT_DOMAIN_DEFAULT || 'https://example.com';
+    // 使用当前页面地址作为真实链接
+    const gameUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
 
     // 创建分享内容
     const shareText = `我在【恋爱哄哄模拟器】中${isWon ? '成功让TA开心' : '挑战失败'}！
@@ -246,29 +247,11 @@ export function GameResult() {
 ⏱️ 用时：${Math.floor(duration / 60)}分${duration % 60}秒
 ${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a.name).join('、')}` : ''}
 
-📸 查看我的游戏结果卡片！
-
 🔗 点击链接直接开始游戏：${gameUrl}
 
 来挑战一下你能用几轮让TA开心吧！`;
 
     try {
-      // 如果有生成的图片，先保存图片
-      if (shareImageUrl) {
-        try {
-          // 创建下载链接并下载图片
-          const link = document.createElement('a');
-          link.href = shareImageUrl;
-          link.download = `恋爱哄哄模拟器-${state.status}-${Date.now()}.png`;
-          link.click();
-
-          // 提示用户图片已保存
-          alert('📸 游戏结果卡片已保存！\n\n接下来将为您复制分享链接...');
-        } catch (imgError) {
-          console.error('保存图片失败:', imgError);
-        }
-      }
-
       // 尝试使用原生分享 API
       if (navigator.share) {
         try {
@@ -283,28 +266,126 @@ ${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a
             console.log('用户取消了分享');
             return;
           }
-          // 其他错误，回退到复制到剪贴板
-          console.log('分享失败，回退到复制到剪贴板:', shareError);
-          throw shareError;
+          console.log('分享失败，尝试复制:', shareError);
         }
       }
 
-      // 复制到剪贴板
-      await navigator.clipboard.writeText(shareText);
-      alert('✅ 分享链接已复制到剪贴板！\n\n粘贴即可分享给朋友~');
-    } catch (error) {
-      console.error('分享失败:', error);
-      alert('❌ 分享失败，请手动复制分享内容');
-      // 尝试复制到剪贴板作为最后的回退方案
+      // 尝试复制到剪贴板
       try {
-        await navigator.clipboard.writeText(shareText);
-        alert('✅ 已自动复制到剪贴板！');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareText);
+          alert('✅ 分享内容已复制到剪贴板！');
+          return;
+        }
       } catch (clipboardError) {
-        console.error('复制到剪贴板也失败了:', clipboardError);
-        alert('❌ 复制失败，请手动截图保存');
+        console.log('Clipboard API 失败，尝试备选方案:', clipboardError);
+      }
+
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareText;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.opacity = '0';
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        const success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (success) {
+          alert('✅ 分享内容已复制到剪贴板！');
+        } else {
+          throw new Error('execCommand 复制失败');
+        }
+      } catch (execError) {
+        console.error('所有复制方案都失败:', execError);
       }
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  // 保存图片
+  const handleSaveImage = async () => {
+    if (!shareImageUrl) return;
+
+    try {
+      const link = document.createElement('a');
+      link.href = shareImageUrl;
+      link.download = `恋爱哄哄模拟器-${state.status}-${Date.now()}.png`;
+      link.click();
+
+      alert('📸 游戏结果卡片已保存！');
+    } catch (imgError) {
+      console.error('保存图片失败:', imgError);
+      alert('❌ 保存图片失败，请重试！');
+    }
+  };
+
+  // 手动复制分享内容
+  const handleManualCopy = async () => {
+    // 使用当前页面地址作为真实链接
+    const gameUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
+    const shareText = `我在【恋爱哄哄模拟器】中${isWon ? '成功让TA开心' : '挑战失败'}！
+🎭 场景：${scenario?.title}
+💎 性格：${personality?.name}
+🔄 轮数：${state.round}轮
+💕 愉悦值：${state.pleasure}/100
+⏱️ 用时：${Math.floor(duration / 60)}分${duration % 60}秒
+${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a.name).join('、')}` : ''}
+
+🔗 点击链接直接开始游戏：${gameUrl}`;
+
+    try {
+      // 首先尝试使用现代的 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareText);
+        alert('✅ 已复制到剪贴板！');
+        return;
+      }
+    } catch (error) {
+      console.log('Clipboard API 失败，尝试备选方案:', error);
+    }
+
+    // 备选方案：使用传统的 document.execCommand
+    try {
+      // 创建一个临时的 textarea 元素
+      const textArea = document.createElement('textarea');
+      textArea.value = shareText;
+      
+      // 防止页面滚动到底部
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.opacity = '0';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      // 尝试复制
+      const success = document.execCommand('copy');
+      
+      // 移除临时元素
+      document.body.removeChild(textArea);
+      
+      if (success) {
+        alert('✅ 已复制到剪贴板！');
+      } else {
+        throw new Error('execCommand 复制失败');
+      }
+    } catch (error) {
+      console.error('所有复制方案都失败:', error);
+      // 如果都失败了，让用户手动选择文本复制
+      alert('❌ 自动复制失败，请手动选择上方文本复制！');
     }
   };
 
@@ -448,6 +529,34 @@ ${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a
             </div>
           )}
 
+          {/* 分享内容 */}
+          <div className="mb-6">
+            <div className="text-sm text-gray-500 mb-2">分享内容</div>
+            <div className="relative">
+              <textarea
+                readOnly
+                value={`我在【恋爱哄哄模拟器】中${isWon ? '成功让TA开心' : '挑战失败'}！
+🎭 场景：${scenario?.title}
+💎 性格：${personality?.name}
+🔄 轮数：${state.round}轮
+💕 愉悦值：${state.pleasure}/100
+⏱️ 用时：${Math.floor(duration / 60)}分${duration % 60}秒
+${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a.name).join('、')}` : ''}
+
+🔗 点击链接直接开始游戏：${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000'}`}
+                className="w-full h-40 p-3 text-sm border rounded-lg resize-none bg-gray-50"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={handleManualCopy}
+              >
+                复制
+              </Button>
+            </div>
+          </div>
+
           {/* 操作按钮 */}
           <div className="flex gap-3">
             <Button
@@ -459,12 +568,22 @@ ${earnedAchievements.length > 0 ? `🏆 成就：${earnedAchievements.map(a => a
               再来一局
             </Button>
             <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleSaveImage}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              保存图片
+            </Button>
+            <Button
               className="flex-1 bg-pink-500 hover:bg-pink-600"
-              onClick={handleShare}
+              onClick={handleShareLink}
               disabled={shareLoading}
             >
               <Share2 className="w-4 h-4 mr-2" />
-              分享结果
+              分享链接
             </Button>
           </div>
         </CardContent>
