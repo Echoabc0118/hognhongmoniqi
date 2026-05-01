@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
+import { NextResponse } from 'next/server';
+import { generateText } from '@/lib/ai/openrouter';
+import { ProviderError, getHttpStatusForProviderError } from '@/lib/provider-errors';
 import { db } from '@/storage/database/drizzle-client';
 import { blogPosts } from '@/storage/database/shared/schema';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const config = new Config();
-    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
-    const llmClient = new LLMClient(config, customHeaders);
-
     const topics = [
       '如何应对伴侣的冷战',
       '送礼物避雷指南',
@@ -24,28 +21,30 @@ export async function POST(request: NextRequest) {
 
     const randomTopic = topics[Math.floor(Math.random() * topics.length)];
 
-    const prompt = `你是一个恋爱专栏作家，擅长写轻松幽默的情感文章。
-
-请写一篇关于"${randomTopic}"的文章。
+    const prompt = `你是一个恋爱专栏作者，擅长写轻松幽默的情感文章。
+请写一篇关于“${randomTopic}”的文章。
 
 要求：
-1. 风格轻松幽默，像和朋友聊天一样
-2. 字数在300-500字之间
-3. 内容实用，能给读者一些有价值的建议
-4. 使用生动的例子和比喻
-5. 语气友好，带一点调皮
+1. 风格轻松幽默，像和朋友聊天一样。
+2. 字数在 300-500 字之间。
+3. 内容实用，能给读者一些有价值的建议。
+4. 使用生动的例子和比喻。
+5. 语气友好，带一点调侃。
 
-请以JSON格式返回，格式如下：
+请以 JSON 格式返回，格式如下：
 {
   "title": "文章标题",
-  "summary": "文章摘要（1句话，20字以内）",
+  "summary": "文章摘要，一句话，50字以内",
   "content": "文章正文"
 }`;
 
-    const messages = [{ role: 'user' as const, content: prompt }];
-    const response = await llmClient.invoke(messages, { temperature: 0.9 });
+    const response = await generateText({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.9,
+      operation: 'blog_generate',
+    });
 
-    let articleData;
+    let articleData: { title?: string; summary?: string; content?: string };
     try {
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -53,8 +52,8 @@ export async function POST(request: NextRequest) {
       } else {
         throw new Error('无法从响应中提取 JSON');
       }
-    } catch (error) {
-      throw new Error(`解析文章内容失败`);
+    } catch {
+      throw new Error('解析文章内容失败');
     }
 
     if (!articleData.title || !articleData.summary || !articleData.content) {
@@ -76,6 +75,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Generate blog API error:', error);
+
+    if (error instanceof ProviderError) {
+      return NextResponse.json(
+        { error: error.publicMessage, category: error.category },
+        { status: getHttpStatusForProviderError(error) }
+      );
+    }
+
     return NextResponse.json(
       { error: '生成文章失败' },
       { status: 500 }
