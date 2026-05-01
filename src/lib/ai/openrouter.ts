@@ -26,7 +26,7 @@ export interface GenerateTextResponse {
 }
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
+const DEFAULT_MODEL = 'deepseek/deepseek-chat-v3.1';
 
 export async function generateText({
   messages,

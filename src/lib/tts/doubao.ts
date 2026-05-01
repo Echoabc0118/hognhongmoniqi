@@ -20,7 +20,7 @@ export interface SynthesizeSpeechResponse {
 }
 
 const DEFAULT_ENDPOINT = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
-const DEFAULT_RESOURCE_ID = 'volc.service_type.10029';
+const DEFAULT_RESOURCE_ID = 'seed-tts-2.0';
 
 export async function synthesizeSpeech({
   text,

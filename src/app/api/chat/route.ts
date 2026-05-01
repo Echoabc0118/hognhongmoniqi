@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (isFirstMessage) {
       const openingPrompt = buildOpeningPrompt(personality, scenario, gender, currentPleasure);
       const response = await generateText({
-        messages: [{ role: 'system', content: openingPrompt }],
+        messages: [{ role: 'user', content: openingPrompt }],
         temperature: 0.8,
         operation: 'game_opening',
       });
