@@ -22,7 +22,9 @@ interface LeaderboardEntry {
   rank: number;
   userId: number;
   username: string;
+  scenario: string;
   finalScore: number;
+  result: 'won' | 'lost' | 'timeout';
   achievedAt: string;
 }
 
@@ -75,6 +77,12 @@ export function Leaderboard({ open, onClose }: LeaderboardProps) {
     return date.toLocaleDateString('zh-CN');
   };
 
+  const getResultText = (result: LeaderboardEntry['result']) => {
+    if (result === 'won') return '通关';
+    if (result === 'timeout') return '次数用完';
+    return '未哄好';
+  };
+
   const isCurrentUser = (entry: LeaderboardEntry) => {
     return isAuthenticated && user && entry.userId === user.id;
   };
@@ -105,17 +113,15 @@ export function Leaderboard({ open, onClose }: LeaderboardProps) {
                     'flex items-center gap-3 p-3 rounded-lg transition-colors',
                     isCurrentUser(entry)
                       ? 'bg-pink-100 border-2 border-pink-300'
-                      : entry.rank < 3
+                      : entry.rank <= 3
                       ? 'bg-yellow-50'
                       : 'bg-gray-50'
                   )}
                 >
-                  {/* 排名 */}
                   <div className="w-8 flex justify-center">
                     {getRankIcon(entry.rank)}
                   </div>
 
-                  {/* 用户信息 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <div className="font-medium truncate">
@@ -128,12 +134,13 @@ export function Leaderboard({ open, onClose }: LeaderboardProps) {
                       )}
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(entry.achievedAt)}
+                      <Clock className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {formatDate(entry.achievedAt)} · {getResultText(entry.result)} · {entry.scenario}
+                      </span>
                     </div>
                   </div>
 
-                  {/* 分数 */}
                   <div className="text-right">
                     <div className="text-lg font-bold text-pink-600">
                       {entry.finalScore}
@@ -149,7 +156,7 @@ export function Leaderboard({ open, onClose }: LeaderboardProps) {
         {!isAuthenticated && (
           <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
             <p className="text-sm text-amber-800 text-center">
-              💡 登录后可参与排行榜挑战！
+              登录后，每局游戏成绩都会自动参与排行榜。
             </p>
           </div>
         )}

@@ -200,6 +200,18 @@ export function getPleasureStage(pleasure: number): PleasureStage {
   return PLEASURE_STAGES[0];
 }
 
+// 移除括号中的动作、表情、神态旁白，只保留可朗读台词
+export function stripNarrationText(text: string | undefined | null): string {
+  if (!text) return '';
+  return text
+    .replace(/（[^（）]*）/g, '')
+    .replace(/\([^()]*\)/g, '')
+    .replace(/【[^【】]*】/g, '')
+    .replace(/\[[^\[\]]*\]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // 生成 SSML
 export function generateSSML(text: string, pleasureStage: PleasureStage): string {
   const rateMap = {
@@ -214,8 +226,10 @@ export function generateSSML(text: string, pleasureStage: PleasureStage): string
     loud: '+20%',
   };
 
+  const voiceText = stripNarrationText(text);
+
   // 如果文本中有省略号，添加停顿
-  let processedText = text.replace(/\.\.\./g, `<break time="${pleasureStage.breakTime}ms"/>...`);
+  let processedText = voiceText.replace(/\.\.\./g, `<break time="${pleasureStage.breakTime}ms"/>...`);
   
   // 在句号后添加停顿
   processedText = processedText.replace(/\。/g, `。<break time="${pleasureStage.breakTime}ms"/>`);

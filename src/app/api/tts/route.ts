@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { synthesizeSpeech } from '@/lib/tts/doubao';
 import { ProviderError, getHttpStatusForProviderError } from '@/lib/provider-errors';
-import { PERSONALITIES, getPleasureStage } from '@/lib/game-config';
+import { PERSONALITIES, getPleasureStage, stripNarrationText } from '@/lib/game-config';
 
 interface TTSRequest {
   text: string;
@@ -15,9 +15,10 @@ export async function POST(request: NextRequest) {
   try {
     const body: TTSRequest = await request.json();
     const { text, gender, personalityId, currentPleasure } = body;
+    const voiceText = stripNarrationText(text);
 
-    if (!text) {
-      return NextResponse.json({ error: '缺少文本内容' }, { status: 400 });
+    if (!voiceText) {
+      return NextResponse.json({ error: '缺少可朗读的文本内容' }, { status: 400 });
     }
 
     const personality = PERSONALITIES.find(p => p.id === personalityId);
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     getPleasureStage(currentPleasure);
 
     const response = await synthesizeSpeech({
-      text,
+      text: voiceText,
       speaker,
       format: 'mp3',
       sampleRate: 24000,

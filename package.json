@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build && tsup src/server.ts --format cjs --platform node --target node20 --outDir dist --no-splitting --no-minify",
-    "dev": "set PORT=5000 && pnpm tsx watch src/server.ts",
+    "build": "bash ./scripts/build.sh",
+    "dev": "bash ./scripts/dev.sh",
     "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
-    "start": "node dist/server.js",
+    "start": "bash ./scripts/start.sh",
     "ts-check": "tsc -p tsconfig.json"
   },
   "dependencies": {

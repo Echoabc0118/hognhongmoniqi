@@ -21,7 +21,9 @@ interface LeaderboardEntry {
   rank: number;
   userId: number;
   username: string;
+  scenario: string;
   finalScore: number;
+  result: 'won' | 'lost' | 'timeout';
   achievedAt: string;
 }
 
@@ -72,14 +74,28 @@ export default function LeaderboardPage() {
     return date.toLocaleDateString('zh-CN');
   };
 
+  const getResultText = (result: LeaderboardEntry['result']) => {
+    if (result === 'won') return '通关';
+    if (result === 'timeout') return '次数用完';
+    return '未哄好';
+  };
+
   const isCurrentUser = (entry: LeaderboardEntry) => {
     return isAuthenticated && user && entry.userId === user.id;
   };
 
+  const renderEntryMeta = (entry: LeaderboardEntry) => (
+    <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+      <Clock className="w-3 h-3 shrink-0" />
+      <span className="truncate">
+        {formatDate(entry.achievedAt)} · {getResultText(entry.result)} · {entry.scenario}
+      </span>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white p-4">
       <div className="max-w-2xl mx-auto">
-        {/* 顶部导航 */}
         <div className="flex items-center gap-4 mb-6">
           <Link href="/">
             <Button variant="ghost" className="gap-2">
@@ -122,28 +138,24 @@ export default function LeaderboardPage() {
           )}
         </div>
 
-        {/* 排行榜卡片 */}
         <Card className="shadow-lg">
           <CardContent className="p-6">
-            {/* 标题和说明 */}
             <div className="text-center mb-6">
-              <div className="text-5xl mb-3">🏆</div>
+              <Trophy className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
               <h2 className="text-2xl font-bold text-gray-800 mb-2">排行榜 TOP 20</h2>
               <p className="text-gray-500 text-sm">
-                按最高愉悦值排名，每局游戏自动参与
+                所有游戏记录都会参与排名，按每位用户最佳成绩展示
               </p>
             </div>
 
-            {/* 登录提示 */}
             {!isAuthenticated && (
               <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-sm text-amber-800 text-center">
-                  💡 登录后您的游戏成绩将自动参与排行榜挑战！
+                  登录后，你的每局游戏成绩都会自动参与排行榜。
                 </p>
               </div>
             )}
 
-            {/* 排行榜列表 */}
             {loading ? (
               <div className="text-center py-12 text-gray-400">加载中...</div>
             ) : leaderboard.length === 0 ? (
@@ -159,7 +171,6 @@ export default function LeaderboardPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* 前三名特殊展示 */}
                 {leaderboard.slice(0, 3).map((entry, index) => (
                   <div
                     key={entry.id}
@@ -174,15 +185,13 @@ export default function LeaderboardPage() {
                         : 'bg-gradient-to-r from-amber-100 to-yellow-50 border-2 border-amber-300'
                     )}
                   >
-                    {/* 排名 */}
                     <div className="w-12 flex justify-center">
                       {getRankIcon(entry.rank)}
                     </div>
 
-                    {/* 用户信息 */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="font-bold text-lg">
+                        <div className="font-bold text-lg truncate">
                           {entry.username}
                         </div>
                         {isCurrentUser(entry) && (
@@ -191,13 +200,9 @@ export default function LeaderboardPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(entry.achievedAt)}
-                      </div>
+                      {renderEntryMeta(entry)}
                     </div>
 
-                    {/* 分数 */}
                     <div className="text-right">
                       <div className="text-3xl font-bold text-pink-600">
                         {entry.finalScore}
@@ -207,7 +212,6 @@ export default function LeaderboardPage() {
                   </div>
                 ))}
 
-                {/* 4-20名普通展示 */}
                 {leaderboard.slice(3).map((entry) => (
                   <div
                     key={entry.id}
@@ -218,28 +222,22 @@ export default function LeaderboardPage() {
                         : 'bg-gray-50'
                     )}
                   >
-                    {/* 排名 */}
                     <div className="w-8 flex justify-center">
                       {getRankIcon(entry.rank)}
                     </div>
 
-                    {/* 用户信息 */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="font-medium">{entry.username}</div>
+                        <div className="font-medium truncate">{entry.username}</div>
                         {isCurrentUser(entry) && (
                           <span className="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full">
                             你
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(entry.achievedAt)}
-                      </div>
+                      {renderEntryMeta(entry)}
                     </div>
 
-                    {/* 分数 */}
                     <div className="text-right">
                       <div className="text-xl font-bold text-pink-600">
                         {entry.finalScore}
@@ -253,10 +251,9 @@ export default function LeaderboardPage() {
           </CardContent>
         </Card>
 
-        {/* 底部说明 */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>📮 只有成功通关（愉悦值达到100）的成绩才会上榜</p>
-          <p className="mt-1">🎯 每个用户只显示最高分数记录</p>
+          <p>所有结局都会进入排行榜，按最终愉悦值排名。</p>
+          <p className="mt-1">每个用户只展示一条最佳记录，同分时通关记录优先。</p>
         </div>
       </div>
     </div>

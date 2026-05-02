@@ -1,7 +1,7 @@
 'use client';
 
 import { useGame } from '@/context/game-context';
-import { PERSONALITIES, SCENARIOS, getPleasureStage, Message } from '@/lib/game-config';
+import { PERSONALITIES, SCENARIOS, getPleasureStage, Message, stripNarrationText } from '@/lib/game-config';
 import { ReplyOption } from '@/app/api/chat/route';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -42,6 +42,7 @@ export function GamePlay() {
   const personality = PERSONALITIES.find(p => p.id === settings?.personality);
   const scenario = SCENARIOS.find(s => s.id === settings?.scenarioId);
   const pleasureStage = getPleasureStage(state.pleasure);
+  const showInlinePleasure = false;
 
   // 过滤括号内的描述性文字（肢体动作、情感描述等）
   const filterBracketContent = (text: string | undefined | null): string => {
@@ -55,7 +56,7 @@ export function GamePlay() {
 
   // 播放 TTS
   const playTTS = useCallback(async (text: string, ssml?: string) => {
-    const textForTTS = filterBracketContent(text);
+    const textForTTS = stripNarrationText(filterBracketContent(text));
     if (!textForTTS) return;
     
     try {
@@ -333,7 +334,7 @@ export function GamePlay() {
                   )}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                  {message.role === 'assistant' && message.pleasureChange !== 0 && (
+                  {showInlinePleasure && message.role === 'assistant' && message.pleasureChange !== 0 && (
                     <div className={cn(
                       'text-xs mt-2 flex items-center gap-1',
                       message.pleasureChange > 0 ? 'text-green-500' : 'text-red-500'
@@ -352,7 +353,7 @@ export function GamePlay() {
                     </div>
                   )}
                   {/* 当前愉悦值进度条 */}
-                  {message.role === 'assistant' && message.currentPleasure !== undefined && (
+                  {showInlinePleasure && message.role === 'assistant' && message.currentPleasure !== undefined && (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-xs text-gray-500">愉悦值:</span>
                       <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
