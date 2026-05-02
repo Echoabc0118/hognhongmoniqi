@@ -44,7 +44,8 @@ export function GamePlay() {
   const pleasureStage = getPleasureStage(state.pleasure);
 
   // 过滤括号内的描述性文字（肢体动作、情感描述等）
-  const filterBracketContent = (text: string): string => {
+  const filterBracketContent = (text: string | undefined | null): string => {
+    if (!text) return '';
     return text
       .replace(/（[^）]*）/g, '')
       .replace(/\([^)]*\)/g, '')

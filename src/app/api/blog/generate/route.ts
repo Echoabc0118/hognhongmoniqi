@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateText } from '@/lib/ai/openrouter';
+import { generateText } from '@/lib/ai/generate-text';
 import { ProviderError, getHttpStatusForProviderError } from '@/lib/provider-errors';
 import { db } from '@/storage/database/drizzle-client';
 import { blogPosts } from '@/storage/database/shared/schema';

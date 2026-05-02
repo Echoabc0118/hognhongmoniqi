@@ -4,46 +4,26 @@ import {
   toProviderError,
 } from '@/lib/provider-errors';
 import { logProviderEnd, logProviderStart } from '@/lib/provider-logger';
+import type { GenerateTextRequest, GenerateTextResponse } from '@/lib/ai/types';
 
-export interface OpenRouterMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+const DOUBAO_SEED_ENDPOINT = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+const DEFAULT_MODEL = 'doubao-seed-character-251128';
 
-export interface GenerateTextRequest {
-  messages: OpenRouterMessage[];
-  temperature?: number;
-  reasoning?: boolean;
-  timeoutMs?: number;
-  operation?: string;
-}
-
-export interface GenerateTextResponse {
-  content: string;
-  model: string;
-  provider: 'openrouter';
-  usage?: unknown;
-}
-
-const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'deepseek/deepseek-chat-v3.1';
-
-export async function generateText({
+export async function generateDoubaoSeedText({
   messages,
   temperature = 0.8,
-  reasoning = true,
   timeoutMs = 60000,
   operation = 'generate_text',
 }: GenerateTextRequest): Promise<GenerateTextResponse> {
-  const provider = 'openrouter';
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  const provider = 'doubao-seed';
+  const apiKey = process.env.ARK_API_KEY;
+  const model = process.env.DOUBAO_SEED_MODEL || DEFAULT_MODEL;
 
   if (!apiKey) {
     throw new ProviderError({
       provider,
       category: 'configuration',
-      message: 'OPENROUTER_API_KEY is not set',
+      message: 'ARK_API_KEY is not set',
     });
   }
 
@@ -55,7 +35,7 @@ export async function generateText({
   let status: number | undefined;
 
   try {
-    const response = await fetch(OPENROUTER_ENDPOINT, {
+    const response = await fetch(DOUBAO_SEED_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +45,6 @@ export async function generateText({
         model,
         messages,
         temperature,
-        reasoning: reasoning ? { enabled: true } : undefined,
       }),
       signal: controller.signal,
     });
@@ -82,15 +61,15 @@ export async function generateText({
       });
     }
 
-    let data: OpenRouterResponse;
+    let data: DoubaoSeedResponse;
     try {
-      data = JSON.parse(responseText) as OpenRouterResponse;
+      data = JSON.parse(responseText) as DoubaoSeedResponse;
     } catch (error) {
       throw new ProviderError({
         provider,
         category: 'bad_response',
         status: response.status,
-        message: 'OpenRouter returned non-JSON response',
+        message: 'Doubao Seed returned non-JSON response',
         cause: error,
       });
     }
@@ -101,7 +80,7 @@ export async function generateText({
         provider,
         category: 'bad_response',
         status: response.status,
-        message: 'OpenRouter response is missing choices[0].message.content',
+        message: 'Doubao Seed response is missing choices[0].message.content',
       });
     }
 
@@ -138,13 +117,12 @@ export async function generateText({
   }
 }
 
-interface OpenRouterResponse {
+interface DoubaoSeedResponse {
   model?: string;
   choices?: Array<{
     message?: {
       role?: string;
       content?: string;
-      reasoning?: unknown;
     };
     finish_reason?: string;
   }>;

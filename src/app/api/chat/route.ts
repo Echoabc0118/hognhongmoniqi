@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateText, OpenRouterMessage } from '@/lib/ai/openrouter';
+import { generateText } from '@/lib/ai/generate-text';
+import type { LLMMessage } from '@/lib/ai/types';
 import { ProviderError, getHttpStatusForProviderError } from '@/lib/provider-errors';
 import { PERSONALITIES, SCENARIOS, getPleasureStage, generateSSML } from '@/lib/game-config';
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
 
       const systemPrompt = buildSystemPrompt(personality, scenario, gender, currentPleasure);
-      const messages: OpenRouterMessage[] = [
+      const messages: LLMMessage[] = [
         { role: 'system', content: systemPrompt },
         ...conversationHistory,
         { role: 'user', content: message },

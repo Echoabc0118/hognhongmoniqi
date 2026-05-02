@@ -1,4 +1,4 @@
-export type ProviderName = 'openrouter' | 'doubao-tts';
+export type ProviderName = 'doubao-seed' | 'doubao-tts';
 
 export type ProviderErrorCategory =
   | 'configuration'
